@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Remote Control Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .toast { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+        .history-table { max-height: 400px; overflow-y: auto; }
     </style>
 </head>
 <body>
     <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-4">
-        <div class="max-w-6xl mx-auto space-y-6">
+        <div class="max-w-7xl mx-auto space-y-6">
             <!-- Header -->
             <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 text-center">
                 <h1 class="text-3xl font-bold text-white flex items-center justify-center gap-3">
@@ -22,7 +25,7 @@
                     </svg>
                     Admin Panel - Remote Control Monitor
                 </h1>
-                <p class="text-blue-200">Kontrol dan monitor aktivitas remote control dadu</p>
+                <p class="text-blue-200">Kontrol dan monitor aktivitas remote control dadu dengan histori lengkap</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -57,6 +60,11 @@
                             <span class="text-gray-300">Total Request</span>
                             <span id="totalRequests" class="text-purple-400 font-bold">0</span>
                         </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Data Terakhir</span>
+                            <span id="lastData" class="text-orange-400 font-bold">-</span>
+                        </div>
                     </div>
                 </div>
 
@@ -85,6 +93,71 @@
                                 </button>
                             </div>
                         </div>
+
+                        <div class="border-t border-white/20 pt-4">
+                            <button id="clearHistoryBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md flex items-center justify-center gap-2">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Hapus Histori
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histori Aktivitas -->
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-white text-lg font-semibold flex items-center gap-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        Histori Aktivitas Remote
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-400 text-sm">Total: <span id="historyCount" class="text-white font-bold">0</span></span>
+                        <button id="refreshHistoryBtn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="history-table bg-white/5 rounded-lg overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-white/10">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-gray-300 font-medium">#</th>
+                                <th class="text-left py-3 px-4 text-gray-300 font-medium">Angka Dikirim</th>
+                                <th class="text-left py-3 px-4 text-gray-300 font-medium">Waktu</th>
+                                <th class="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="text-white">
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-gray-400">
+                                    Belum ada histori aktivitas
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-between items-center mt-4">
+                    <div class="text-sm text-gray-400">
+                        Menampilkan <span id="showingCount">0</span> dari <span id="totalHistoryCount">0</span> data
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="prevPageBtn" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded text-sm disabled:opacity-50" disabled>
+                            ← Sebelumnya
+                        </button>
+                        <span id="pageInfo" class="text-white px-3 py-1">1</span>
+                        <button id="nextPageBtn" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded text-sm disabled:opacity-50" disabled>
+                            Selanjutnya →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -116,13 +189,14 @@
                     <p class="text-yellow-200 text-sm">
                         <strong>⚠️ Peringatan Monitoring:</strong><br/>
                         Sistem ini memantau aktivitas remote control secara real-time. 
-                        Semua penggunaan dan aktivitas akan tercatat dan bisa dipantau dari panel admin ini.
+                        Semua penggunaan dan aktivitas akan tercatat dan tersimpan di database histori.
                     </p>
                 </div>
 
                 <div class="mt-4 text-center">
                     <div class="text-xs text-gray-500 space-y-1">
-                        <p>Server Firebase: <span id="serverUrl">https://blitarr22-6a0d4-default-rtdb.firebaseio.com/</span></p>
+                        <p>Server Remote: <span id="remoteServerUrl">https://blitarr22-6a0d4-default-rtdb.firebaseio.com/</span></p>
+                        <p>Server Database: <span id="databaseServerUrl">https://dadubaru-3d278-default-rtdb.firebaseio.com/</span></p>
                         <p>Panel Admin - Dice Hack Control System</p>
                         <p>Last Update: <span id="lastUpdate"></span></p>
                     </div>
@@ -132,13 +206,22 @@
             <!-- Server Configuration -->
             <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
                 <h2 class="text-white text-lg font-semibold mb-4">Konfigurasi Server</h2>
-                <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-gray-300 text-sm font-medium">URL Server Firebase</label>
-                        <input id="serverInput" type="text" value="https://blitarr22-6a0d4-default-rtdb.firebaseio.com/" class="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md px-3 py-2" placeholder="https://your-project.firebaseio.com/">
+                        <label class="text-gray-300 text-sm font-medium">URL Server Remote/Monitor</label>
+                        <input id="remoteServerInput" type="text" value="https://blitarr22-6a0d4-default-rtdb.firebaseio.com/" class="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md px-3 py-2" placeholder="https://your-project.firebaseio.com/">
                     </div>
-                    <button id="updateServerBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md">
-                        Update Server
+                    <div>
+                        <label class="text-gray-300 text-sm font-medium">URL Server Database Histori</label>
+                        <input id="databaseServerInput" type="text" value="https://dadubaru-3d278-default-rtdb.firebaseio.com/" class="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md px-3 py-2" placeholder="https://your-database.firebaseio.com/">
+                    </div>
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <button id="updateRemoteServerBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md">
+                        Update Server Remote
+                    </button>
+                    <button id="updateDatabaseServerBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md">
+                        Update Server Database
                     </button>
                 </div>
             </div>
@@ -149,8 +232,25 @@
     <div id="toastContainer"></div>
 
     <script>
+        // Firebase configuration for database
+        const firebaseConfig = {
+            apiKey: "AIzaSyBN6L5nmK5ezYVobA_q0SVaFjJDra92gBI",
+            authDomain: "dadubaru-3d278.firebaseapp.com",
+            databaseURL: "https://dadubaru-3d278-default-rtdb.firebaseio.com",
+            projectId: "dadubaru-3d278",
+            storageBucket: "dadubaru-3d278.firebasestorage.app",
+            messagingSenderId: "589236595114",
+            appId: "1:589236595114:web:bc2cf0dd80c0845f95e3d3",
+            measurementId: "G-L6GL20LKZS"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // State variables
-        let serverUrl = "https://blitarr22-6a0d4-default-rtdb.firebaseio.com/";
+        let remoteServerUrl = "https://blitarr22-6a0d4-default-rtdb.firebaseio.com/";
+        let databaseServerUrl = "https://dadubaru-3d278-default-rtdb.firebaseio.com/";
         let remoteStatus = {
             isActive: true,
             activeUntil: null,
@@ -158,6 +258,10 @@
             totalRequests: 0
         };
         let isLoading = false;
+        let historyData = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let lastDataValue = null;
 
         // DOM elements
         const statusDot = document.getElementById('statusDot');
@@ -165,15 +269,28 @@
         const timeRemaining = document.getElementById('timeRemaining');
         const lastActivity = document.getElementById('lastActivity');
         const totalRequests = document.getElementById('totalRequests');
+        const lastData = document.getElementById('lastData');
         const toggleBtn = document.getElementById('toggleBtn');
         const activeHours = document.getElementById('activeHours');
         const setTimeBtn = document.getElementById('setTimeBtn');
         const onlineStatus = document.getElementById('onlineStatus');
         const totalUsage = document.getElementById('totalUsage');
-        const serverUrlSpan = document.getElementById('serverUrl');
+        const remoteServerUrlSpan = document.getElementById('remoteServerUrl');
+        const databaseServerUrlSpan = document.getElementById('databaseServerUrl');
         const lastUpdate = document.getElementById('lastUpdate');
-        const serverInput = document.getElementById('serverInput');
-        const updateServerBtn = document.getElementById('updateServerBtn');
+        const remoteServerInput = document.getElementById('remoteServerInput');
+        const databaseServerInput = document.getElementById('databaseServerInput');
+        const updateRemoteServerBtn = document.getElementById('updateRemoteServerBtn');
+        const updateDatabaseServerBtn = document.getElementById('updateDatabaseServerBtn');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const historyCount = document.getElementById('historyCount');
+        const showingCount = document.getElementById('showingCount');
+        const totalHistoryCount = document.getElementById('totalHistoryCount');
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
         // Toast function
         function showToast(message, type = 'info') {
@@ -208,6 +325,132 @@
             return `${hours}j ${minutes}m`;
         }
 
+        // Save to history database
+        async function saveToHistory(data, timestamp) {
+            try {
+                const historyRef = database.ref('history');
+                const newHistoryRef = historyRef.push();
+                await newHistoryRef.set({
+                    data: data,
+                    timestamp: timestamp,
+                    formattedTime: formatTime(timestamp),
+                    status: 'success'
+                });
+                console.log('History saved successfully');
+            } catch (error) {
+                console.error('Error saving to history:', error);
+            }
+        }
+
+        // Load history from database
+        async function loadHistory() {
+            try {
+                const historyRef = database.ref('history');
+                const snapshot = await historyRef.orderByChild('timestamp').limitToLast(100).once('value');
+                const data = snapshot.val();
+                
+                if (data) {
+                    historyData = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    })).reverse(); // Show newest first
+                } else {
+                    historyData = [];
+                }
+                
+                updateHistoryTable();
+            } catch (error) {
+                console.error('Error loading history:', error);
+                historyData = [];
+                updateHistoryTable();
+            }
+        }
+
+        // Update history table
+        function updateHistoryTable() {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = historyData.slice(startIndex, endIndex);
+            
+            historyCount.textContent = historyData.length;
+            totalHistoryCount.textContent = historyData.length;
+            showingCount.textContent = pageData.length;
+            
+            if (pageData.length === 0) {
+                historyTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-8 text-gray-400">
+                            Belum ada histori aktivitas
+                        </td>
+                    </tr>
+                `;
+            } else {
+                historyTableBody.innerHTML = pageData.map((item, index) => `
+                    <tr class="border-b border-white/10 hover:bg-white/5">
+                        <td class="py-3 px-4">${startIndex + index + 1}</td>
+                        <td class="py-3 px-4 font-mono text-orange-400">${item.data}</td>
+                        <td class="py-3 px-4 text-sm">${item.formattedTime}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">
+                                ${item.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            // Update pagination
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            pageInfo.textContent = `${currentPage} / ${totalPages}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+        }
+
+        // Clear history
+        async function clearHistory() {
+            if (confirm('Apakah Anda yakin ingin menghapus semua histori?')) {
+                try {
+                    await database.ref('history').remove();
+                    historyData = [];
+                    currentPage = 1;
+                    updateHistoryTable();
+                    showToast('Histori berhasil dihapus', 'success');
+                } catch (error) {
+                    console.error('Error clearing history:', error);
+                    showToast('Gagal menghapus histori', 'error');
+                }
+            }
+        }
+
+        // Monitor remote data changes
+        function monitorRemoteData() {
+            const checkRemoteData = async () => {
+                try {
+                    const response = await fetch(`${remoteServerUrl}b/.json`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.results && data.results !== lastDataValue) {
+                            lastDataValue = data.results;
+                            lastData.textContent = data.results;
+                            
+                            // Save to history
+                            await saveToHistory(data.results, data.timestamp || Date.now());
+                            
+                            // Reload history to show new data
+                            await loadHistory();
+                            
+                            showToast(`Data baru diterima: ${data.results}`, 'success');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error monitoring remote data:', error);
+                }
+            };
+
+            // Check every 2 seconds for new data
+            setInterval(checkRemoteData, 2000);
+        }
+
         // Update UI
         function updateUI() {
             // Status dot and text
@@ -240,14 +483,15 @@
             // Last update
             lastUpdate.textContent = new Date().toLocaleString('id-ID');
 
-            // Server URL
-            serverUrlSpan.textContent = serverUrl;
+            // Server URLs
+            remoteServerUrlSpan.textContent = remoteServerUrl;
+            databaseServerUrlSpan.textContent = databaseServerUrl;
         }
 
         // Fetch remote status
         async function fetchRemoteStatus() {
             try {
-                const response = await fetch(`${serverUrl}control/.json`);
+                const response = await fetch(`${remoteServerUrl}control/.json`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data) {
@@ -264,7 +508,7 @@
         async function updateRemoteStatus(newStatus) {
             try {
                 isLoading = true;
-                const response = await fetch(`${serverUrl}control/.json`, {
+                const response = await fetch(`${remoteServerUrl}control/.json`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -319,19 +563,40 @@
             await updateRemoteStatus(newStatus);
         }
 
-        // Update server URL
-        function updateServer() {
-            const newUrl = serverInput.value.trim();
+        // Update server URLs
+        function updateRemoteServer() {
+            const newUrl = remoteServerInput.value.trim();
             if (newUrl) {
                 let formattedUrl = newUrl;
                 if (!formattedUrl.endsWith('/')) {
                     formattedUrl += '/';
                 }
                 
-                serverUrl = formattedUrl;
+                remoteServerUrl = formattedUrl;
                 updateUI();
-                showToast('Server berhasil diubah!', 'success');
-                fetchRemoteStatus(); // Fetch status from new server
+                showToast('Server remote berhasil diubah!', 'success');
+                fetchRemoteStatus();
+            } else {
+                showToast('URL server tidak boleh kosong', 'error');
+            }
+        }
+
+        function updateDatabaseServer() {
+            const newUrl = databaseServerInput.value.trim();
+            if (newUrl) {
+                let formattedUrl = newUrl;
+                if (!formattedUrl.endsWith('/')) {
+                    formattedUrl += '/';
+                }
+                
+                databaseServerUrl = formattedUrl;
+                updateUI();
+                showToast('Server database berhasil diubah!', 'success');
+                
+                // Reinitialize Firebase with new URL
+                firebase.database().goOffline();
+                // Note: In production, you'd need to reinitialize Firebase app
+                showToast('Restart aplikasi untuk menerapkan server database baru', 'info');
             } else {
                 showToast('URL server tidak boleh kosong', 'error');
             }
@@ -339,26 +604,51 @@
 
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Initial update
+            // Initial setup
             updateUI();
             fetchRemoteStatus();
+            loadHistory();
+            monitorRemoteData();
 
             // Set up auto-refresh
             setInterval(fetchRemoteStatus, 5000); // Update every 5 seconds
 
-            // Toggle button
+            // Control buttons
             toggleBtn.addEventListener('click', toggleRemote);
-
-            // Set time button
             setTimeBtn.addEventListener('click', setActiveTime);
+            updateRemoteServerBtn.addEventListener('click', updateRemoteServer);
+            updateDatabaseServerBtn.addEventListener('click', updateDatabaseServer);
+            
+            // History buttons
+            refreshHistoryBtn.addEventListener('click', loadHistory);
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // Pagination buttons
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updateHistoryTable();
+                }
+            });
+            
+            nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(historyData.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    updateHistoryTable();
+                }
+            });
 
-            // Update server button
-            updateServerBtn.addEventListener('click', updateServer);
-
-            // Server input
-            serverInput.addEventListener('keypress', function(e) {
+            // Server input enter key handlers
+            remoteServerInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    updateServer();
+                    updateRemoteServer();
+                }
+            });
+
+            databaseServerInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    updateDatabaseServer();
                 }
             });
         });
