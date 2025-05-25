@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Remote Control Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .toast { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-4">
+        <div class="max-w-6xl mx-auto space-y-6">
+            <!-- Header -->
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 text-center">
+                <h1 class="text-3xl font-bold text-white flex items-center justify-center gap-3">
+                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    Admin Panel - Remote Control Monitor
+                </h1>
+                <p class="text-blue-200">Kontrol dan monitor aktivitas remote control dadu</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Status Remote -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+                    <h2 class="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Status Remote
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Status Aktif</span>
+                            <div class="flex items-center gap-2">
+                                <div id="statusDot" class="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span id="statusText" class="font-semibold text-green-400">AKTIF</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Waktu Tersisa</span>
+                            <span id="timeRemaining" class="text-yellow-400 font-mono">Tidak terbatas</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Aktivitas Terakhir</span>
+                            <span id="lastActivity" class="text-blue-400 text-sm">Tidak ada</span>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">Total Request</span>
+                            <span id="totalRequests" class="text-purple-400 font-bold">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kontrol Remote -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+                    <h2 class="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                        </svg>
+                        Kontrol Remote
+                    </h2>
+                    <div class="space-y-4">
+                        <button id="toggleBtn" class="w-full h-12 font-bold bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
+                            MATIKAN REMOTE
+                        </button>
+
+                        <div class="border-t border-white/20 pt-4">
+                            <label class="text-gray-300 text-sm font-medium">Set Masa Aktif (Jam)</label>
+                            <div class="flex gap-2 mt-2">
+                                <input id="activeHours" type="number" value="24" class="bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 flex-1" placeholder="24" min="1">
+                                <button id="setTimeBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md flex items-center gap-2">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Set
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Aktivitas -->
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+                <h2 class="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Informasi Monitoring
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div id="onlineStatus" class="text-2xl font-bold text-green-400">ONLINE</div>
+                        <div class="text-gray-400 text-sm">Status Remote</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div id="totalUsage" class="text-2xl font-bold text-blue-400">0</div>
+                        <div class="text-gray-400 text-sm">Total Penggunaan</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <div class="text-2xl font-bold text-purple-400">REAL-TIME</div>
+                        <div class="text-gray-400 text-sm">Update Status</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                    <p class="text-yellow-200 text-sm">
+                        <strong>⚠️ Peringatan Monitoring:</strong><br/>
+                        Sistem ini memantau aktivitas remote control secara real-time. 
+                        Semua penggunaan dan aktivitas akan tercatat dan bisa dipantau dari panel admin ini.
+                    </p>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <p>Server Firebase: <span id="serverUrl">https://blitarr22-6a0d4-default-rtdb.firebaseio.com/</span></p>
+                        <p>Panel Admin - Dice Hack Control System</p>
+                        <p>Last Update: <span id="lastUpdate"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Configuration -->
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6">
+                <h2 class="text-white text-lg font-semibold mb-4">Konfigurasi Server</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-300 text-sm font-medium">URL Server Firebase</label>
+                        <input id="serverInput" type="text" value="https://blitarr22-6a0d4-default-rtdb.firebaseio.com/" class="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md px-3 py-2" placeholder="https://your-project.firebaseio.com/">
+                    </div>
+                    <button id="updateServerBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-md">
+                        Update Server
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script>
+        // State variables
+        let serverUrl = "https://blitarr22-6a0d4-default-rtdb.firebaseio.com/";
+        let remoteStatus = {
+            isActive: true,
+            activeUntil: null,
+            lastActivity: null,
+            totalRequests: 0
+        };
+        let isLoading = false;
+
+        // DOM elements
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const timeRemaining = document.getElementById('timeRemaining');
+        const lastActivity = document.getElementById('lastActivity');
+        const totalRequests = document.getElementById('totalRequests');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const activeHours = document.getElementById('activeHours');
+        const setTimeBtn = document.getElementById('setTimeBtn');
+        const onlineStatus = document.getElementById('onlineStatus');
+        const totalUsage = document.getElementById('totalUsage');
+        const serverUrlSpan = document.getElementById('serverUrl');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const serverInput = document.getElementById('serverInput');
+        const updateServerBtn = document.getElementById('updateServerBtn');
+
+        // Toast function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast p-4 rounded-lg text-white mb-2 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            }`;
+            toast.textContent = message;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Format time
+        function formatTime(timestamp) {
+            if (!timestamp) return 'Tidak ada';
+            return new Date(timestamp).toLocaleString('id-ID');
+        }
+
+        // Get time remaining
+        function getTimeRemaining() {
+            if (!remoteStatus.activeUntil) return 'Tidak terbatas';
+            const remaining = remoteStatus.activeUntil - Date.now();
+            if (remaining <= 0) return 'Expired';
+            
+            const hours = Math.floor(remaining / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}j ${minutes}m`;
+        }
+
+        // Update UI
+        function updateUI() {
+            // Status dot and text
+            statusDot.className = `w-3 h-3 rounded-full ${remoteStatus.isActive ? 'bg-green-500' : 'bg-red-500'}`;
+            statusText.className = `font-semibold ${remoteStatus.isActive ? 'text-green-400' : 'text-red-400'}`;
+            statusText.textContent = remoteStatus.isActive ? 'AKTIF' : 'NONAKTIF';
+
+            // Time remaining
+            timeRemaining.textContent = getTimeRemaining();
+
+            // Last activity
+            lastActivity.textContent = formatTime(remoteStatus.lastActivity);
+
+            // Total requests
+            totalRequests.textContent = remoteStatus.totalRequests;
+            totalUsage.textContent = remoteStatus.totalRequests;
+
+            // Online status
+            onlineStatus.textContent = remoteStatus.isActive ? 'ONLINE' : 'OFFLINE';
+            onlineStatus.className = `text-2xl font-bold ${remoteStatus.isActive ? 'text-green-400' : 'text-red-400'}`;
+
+            // Toggle button
+            toggleBtn.textContent = remoteStatus.isActive ? 'MATIKAN REMOTE' : 'HIDUPKAN REMOTE';
+            toggleBtn.className = `w-full h-12 font-bold ${
+                remoteStatus.isActive 
+                    ? 'bg-red-500 hover:bg-red-600' 
+                    : 'bg-green-500 hover:bg-green-600'
+            } text-white rounded-lg transition-colors`;
+
+            // Last update
+            lastUpdate.textContent = new Date().toLocaleString('id-ID');
+
+            // Server URL
+            serverUrlSpan.textContent = serverUrl;
+        }
+
+        // Fetch remote status
+        async function fetchRemoteStatus() {
+            try {
+                const response = await fetch(`${serverUrl}control/.json`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        remoteStatus = data;
+                        updateUI();
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching remote status:', error);
+            }
+        }
+
+        // Update remote status
+        async function updateRemoteStatus(newStatus) {
+            try {
+                isLoading = true;
+                const response = await fetch(`${serverUrl}control/.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(newStatus)
+                });
+
+                if (response.ok) {
+                    remoteStatus = newStatus;
+                    updateUI();
+                    showToast('Status remote berhasil diupdate', 'success');
+                } else {
+                    throw new Error('Failed to update remote status');
+                }
+            } catch (error) {
+                console.error('Error updating remote status:', error);
+                showToast('Gagal mengupdate status remote', 'error');
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Toggle remote
+        async function toggleRemote() {
+            if (isLoading) return;
+            
+            const newStatus = {
+                ...remoteStatus,
+                isActive: !remoteStatus.isActive,
+                lastActivity: Date.now()
+            };
+            await updateRemoteStatus(newStatus);
+        }
+
+        // Set active time
+        async function setActiveTime() {
+            if (isLoading) return;
+            
+            const hours = parseInt(activeHours.value);
+            if (hours <= 0) {
+                showToast('Masa aktif harus lebih dari 0 jam', 'error');
+                return;
+            }
+
+            const activeUntil = Date.now() + (hours * 60 * 60 * 1000);
+            const newStatus = {
+                ...remoteStatus,
+                isActive: true,
+                activeUntil,
+                lastActivity: Date.now()
+            };
+            await updateRemoteStatus(newStatus);
+        }
+
+        // Update server URL
+        function updateServer() {
+            const newUrl = serverInput.value.trim();
+            if (newUrl) {
+                let formattedUrl = newUrl;
+                if (!formattedUrl.endsWith('/')) {
+                    formattedUrl += '/';
+                }
+                
+                serverUrl = formattedUrl;
+                updateUI();
+                showToast('Server berhasil diubah!', 'success');
+                fetchRemoteStatus(); // Fetch status from new server
+            } else {
+                showToast('URL server tidak boleh kosong', 'error');
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial update
+            updateUI();
+            fetchRemoteStatus();
+
+            // Set up auto-refresh
+            setInterval(fetchRemoteStatus, 5000); // Update every 5 seconds
+
+            // Toggle button
+            toggleBtn.addEventListener('click', toggleRemote);
+
+            // Set time button
+            setTimeBtn.addEventListener('click', setActiveTime);
+
+            // Update server button
+            updateServerBtn.addEventListener('click', updateServer);
+
+            // Server input
+            serverInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    updateServer();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
